@@ -1,0 +1,169 @@
+﻿@page "/employees"
+@using Microsoft.Data.SqlClient
+
+<h3 class="text-primary mb-4">Employee Management</h3>
+
+<!-- ✅ Create / Edit Form -->
+<div class="card mb-4">
+    <div class="card-body">
+        <h5>@(isEditMode ? "Edit Employee" : "Add New Employee")</h5>
+        <div class="row g-3">
+            <div class="col-md-4">
+                <input class="form-control" placeholder="Full Name" @bind="newEmployee.FullName" />
+            </div>
+            <div class="col-md-4">
+                <input class="form-control" placeholder="Email" @bind="newEmployee.Email" />
+            </div>
+            <div class="col-md-4">
+                <input class="form-control" type="date" @bind="newEmployee.HireDate" />
+            </div>
+            <div class="col-md-12 mt-3">
+                <button class="btn btn-success me-2" @onclick="SaveEmployee">@((isEditMode ? "Update" : "Add"))</button>
+                @if (isEditMode)
+                {
+                    <button class="btn btn-secondary" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ✅ Employee List -->
+@if (employees == null)
+{
+    <p><em>Loading...</em></p>
+}
+else if (employees.Count == 0)
+{
+    <p class="alert alert-info">No employees found.</p>
+}
+else
+{
+    <table class="table table-bordered table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>ID</th>
+                <th>Full Name</th>
+                <th>Email</th>
+                <th>Hire Date</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var emp in employees)
+            {
+                <tr>
+                    <td>@emp.EmployeeId</td>
+                    <td>@emp.FullName</td>
+                    <td>@emp.Email</td>
+                    <td>@emp.HireDate?.ToString("yyyy-MM-dd")</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary me-2" @onclick="() => EditEmployee(emp)">Edit</button>
+                        <button class="btn btn-sm btn-danger" @onclick="() => DeleteEmployee(emp.EmployeeId)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<Employee> employees = new();
+    private Employee newEmployee = new();
+    private bool isEditMode = false;
+
+
+    private string connStr = "Server=GPU4\\SQLEXPRESS;Database=EmployeeDB;Trusted_Connection=True;TrustServerCertificate=True";
+
+    protected override void OnInitialized()
+    {
+        LoadEmployees();
+    }
+
+    private void LoadEmployees()
+    {
+        employees = new List<Employee>();
+        using SqlConnection conn = new SqlConnection(connStr);
+        SqlCommand cmd = new SqlCommand("SELECT * FROM Employees", conn);
+        conn.Open();
+        SqlDataReader reader = cmd.ExecuteReader();
+        while (reader.Read())
+        {
+            employees.Add(new Employee
+                {
+                    EmployeeId = (int)reader["EmployeeId"],
+                    FullName = reader["FullName"].ToString(),
+                    Email = reader["Email"].ToString(),
+                    HireDate = reader["HireDate"] as DateTime?
+                });
+        }
+    }
+
+    private void SaveEmployee()
+    {
+        if (newEmployee.HireDate == null)
+            return;
+
+        using SqlConnection conn = new SqlConnection(connStr);
+        conn.Open();
+
+        if (isEditMode)
+        {
+            // UPDATE
+            SqlCommand cmd = new SqlCommand("UPDATE Employees SET FullName = @FullName, Email = @Email, HireDate = @HireDate WHERE EmployeeId = @EmployeeId", conn);
+            cmd.Parameters.AddWithValue("@FullName", newEmployee.FullName);
+            cmd.Parameters.AddWithValue("@Email", newEmployee.Email);
+            cmd.Parameters.AddWithValue("@HireDate", newEmployee.HireDate);
+            cmd.Parameters.AddWithValue("@EmployeeId", newEmployee.EmployeeId);
+            cmd.ExecuteNonQuery();
+        }
+        else
+        {
+            // INSERT
+            SqlCommand cmd = new SqlCommand("INSERT INTO Employees (FullName, Email, HireDate) VALUES (@FullName, @Email, @HireDate)", conn);
+            cmd.Parameters.AddWithValue("@FullName", newEmployee.FullName);
+            cmd.Parameters.AddWithValue("@Email", newEmployee.Email);
+            cmd.Parameters.AddWithValue("@HireDate", newEmployee.HireDate);
+            cmd.ExecuteNonQuery();
+        }
+
+        CancelEdit();
+        LoadEmployees();
+    }
+
+    private void EditEmployee(Employee emp)
+    {
+        newEmployee = new Employee
+            {
+                EmployeeId = emp.EmployeeId,
+                FullName = emp.FullName,
+                Email = emp.Email,
+                HireDate = emp.HireDate
+            };
+        isEditMode = true;
+    }
+
+    private void CancelEdit()
+    {
+        newEmployee = new Employee();
+        isEditMode = false;
+    }
+
+    private void DeleteEmployee(int id)
+    {
+        using SqlConnection conn = new SqlConnection(connStr);
+        SqlCommand cmd = new SqlCommand("DELETE FROM Employees WHERE EmployeeId = @id", conn);
+        cmd.Parameters.AddWithValue("@id", id);
+        conn.Open();
+        cmd.ExecuteNonQuery();
+        LoadEmployees();
+    }
+
+    public class Employee
+    {
+        public int EmployeeId { get; set; }
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+        public DateTime? HireDate { get; set; }
+    }
+}

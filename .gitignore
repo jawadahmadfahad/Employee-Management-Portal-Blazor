@@ -1,0 +1,15 @@
+echo "bin/
+obj/
+.vs/
+*.user
+*.suo
+*.sln.docstates
+appsettings.json
+*.db-shm
+*.db-wal" > .gitignore
+EmployeeManagementSystem/appsettings.json
+EmployeeManagementSystem/appsettings.json
+bin/
+obj/
+.vs/
+EmployeeManagementSystem/appsettings.json

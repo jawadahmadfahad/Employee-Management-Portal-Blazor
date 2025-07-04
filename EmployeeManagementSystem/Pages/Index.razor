@@ -1,0 +1,45 @@
+﻿@page "/"
+@using Microsoft.AspNetCore.Components.Authorization
+@inject AuthenticationStateProvider AuthStateProvider
+
+<div class="container mt-5">
+    <div class="text-center">
+        <h1 class="display-4 text-primary fw-bold">Welcome to the Employee Management System</h1>
+        <p class="lead text-secondary mt-3">
+            This application helps you manage employee records efficiently using a secure and modern interface.
+        </p>
+
+        @if (isAuthenticated)
+        {
+                <p class="alert alert-success d-inline-block mt-4 px-4 py-2">
+                    ✅ You are logged in.
+                </p>
+        }
+        else
+        {
+                <p class="alert alert-warning d-inline-block mt-4 px-4 py-2">
+                    🔒 Please log in to manage employee data.
+                </p>
+        }
+
+        <div class="mt-5">
+            <a class="btn btn-outline-primary btn-lg me-3" href="/employees">
+                <i class="bi bi-people-fill me-1"></i> Manage Employees
+            </a>
+
+            <a class="btn btn-outline-secondary btn-lg" href="fetchdata">
+                <i class="bi bi-bar-chart-line me-1"></i> Reports
+            </a>
+        </div>
+    </div>
+</div>
+
+@code {
+    private bool isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        isAuthenticated = authState.User.Identity?.IsAuthenticated ?? false;
+    }
+}
